@@ -6,6 +6,16 @@ string funcG = "";
 string dervF = "";
 string dervsecF = "";
 
+void enablePres(){
+    ss.precision(dbl::max_digits10+1);
+}
+
+void prepareCall(){
+    enablePres();
+    ss.str(std::string());
+    j.clear();
+}
+
 void setF(string expr){
     funcF = expr;
 }
@@ -112,7 +122,7 @@ string bisection (double xi, double xs, double tol, double niter, bool relativeE
             error = xm - xaux;
             error = abs(error);
             if (relativeErr){
-                error = error/xm;
+                error = abs(error/xm);
             }
             cont = cont + 1;
         }
@@ -131,6 +141,7 @@ string bisection (double xi, double xs, double tol, double niter, bool relativeE
         ss << "The provided interval is unsuitable.";
     }
     j["result"] = ss.str();
+    cout << j.dump();
     return j.dump();
 }
 
@@ -170,7 +181,7 @@ string regulaFalsi (double xi, double xs, double tol, double niter, bool relativ
             error = xm - xaux;
             error = abs(error);
             if (relativeErr){
-                error = error/xm;
+                error = abs(error/xm);
             }
             cont = cont + 1;
         }
@@ -207,7 +218,7 @@ string fixedPoint(double tol, double xa, double niter, bool relativeErr){
         fx = f(xn);
         error = abs(xn - xa);
         if(relativeErr){
-            error = error/xn;
+            error = abs(error/xn);
         }
         xa = xn;
         cont = cont + 1;
@@ -248,7 +259,7 @@ string newtonMethod(double tol, double x0, double niter, bool relativeErr){
         dfx = fderv(x1);
         error = abs(x1 - x0);
         if(relativeErr){
-            error = error/x1;
+            error = abs(error/x1);
         }
         x0 = x1;
         cont = cont + 1;
@@ -294,7 +305,7 @@ string secantMethod(double tol, double x0,double x1 ,double niter, bool relative
             double x2 = x1 - fx1*(x1-x0)/den;
             error = abs(x2 - x1);
             if(relativeErr){
-                error = error/x2;
+                error = abs(error/x2);
             }
             x0=x1;
             fx0=fx1;
@@ -310,7 +321,7 @@ string secantMethod(double tol, double x0,double x1 ,double niter, bool relative
             ss << x1 << " is root with error: ";
             ss << scientific << error;
             ss << fixed << " found in " << cont << " iterations.";
-        }else if(den=0){
+        }else if(den==0){
             ss << "There's a possible multiple root";
         }else{
             ss << "Failure in " << niter << " iterations.";
@@ -320,7 +331,7 @@ string secantMethod(double tol, double x0,double x1 ,double niter, bool relative
     return j.dump();
 }
 
-string MultipleRootsMethod(double tol, double x0, double niter, bool relativeErr){
+string multipleRootsMethod(double tol, double x0, double niter, bool relativeErr){
     if(relativeErr){
         j["errorType"] = "relative";
     } else {
@@ -427,7 +438,6 @@ void closedMethodsTable(string jsonString, string methodName){
 void FPTable(string jsonString){
     int w = 20;
     cout << "Fixed Point Results:" << endl;
-    j.parse(jsonString);
     printRow4Col();
     cout << '|' << setw(w) << "n" 
          << '|' << setw(w) << "Xn" 
@@ -462,7 +472,6 @@ void FPTable(string jsonString){
 void NewtonTable(string jsonString){
     int w = 20;
     cout << "Newton Method Results:" << endl;
-    j.parse(jsonString);
     printRow5Col();
     cout << '|' << setw(w) << "n" 
          << '|' << setw(w) << "Xn" 
@@ -501,7 +510,6 @@ void NewtonTable(string jsonString){
 void secantTable(string jsonString){
     int w = 20;
     cout << " Secant Method Results:" << endl;
-    j.parse(jsonString);
     printRow4Col();
     cout << '|' << setw(w) << "n" 
          << '|' << setw(w) << "Xn" 
@@ -536,7 +544,6 @@ void secantTable(string jsonString){
 void MRTable(string jsonString){
     int w = 22;
     cout << "Multiple Roots Method Results:" << endl;
-    j.parse(jsonString);
     printRow6Col();
     cout << '|' << setw(w) << "n" 
          << '|' << setw(w) << "Xn" 
@@ -574,25 +581,32 @@ void MRTable(string jsonString){
     cout << j["result"] << endl;
 }
 
-void enablePres(){
-    ss.precision(dbl::max_digits10+1);
-}
-
 int main(int argc, char *argv[]) {
     //setF("x^3 + 4*(x^2)-10"); //FP Newton sec
-    setF("(x^4)-(18*x^2)+81"); //multiple roots
-    setG("sqrt(10/(x+4))");
-    //setF("exp(-(x^2)+1)-(4*x^3)+25"); //bisection regula-falsi
+    //setF("(x^4)-(18*x^2)+81"); //multiple roots
+    
     //setDervF("x * (8 + (3 * x))"); //Newton
-    setDervF("(4*x^3)-36*x");
-    setDervSecF("(12*x^2)-36");
-    enablePres();
-    //closedMethodsTable(bisection(1, 2, 0.001, 20, false), "Bisection Method");
+    //setDervF("3*x*sin(3*x)-cos(3*x)+3*exp(3*x-12)-2*x+4");
+    //setDervSecF("(12*x^2)-36");
+    prepareCall();
+    //setF("cos((7*x)-8)*exp(-(x^2)+4)+log((x^4)+3)-x-15");
+    //setF("exp(-(x^2)+3)-5*x^2");
+    //setG("(exp(-(x^2)+3)*((2*x^2)+1)+5*x^2)/((2*x)*(exp(-(x^2)+3)+5))");
+    //setF("(x^4)-(7.45*x^3)+(19.0956*x^2)-(20.0471*x)+7.14292992");
+    //setF("exp(-(x^2)+3*sin((3*x+4)))*log((x^2)+4)-3");
+    //setDervF("-20.0471+(38.1912*x)-(22.35*x^2)+(4*x^3)");
+    //setDervSecF("(39.1912)-(44.7*x)+(12*x^2)");
+    //setDervF("(5*x^4)+(16*x^3)+(3*x^2)-(20*x)-4");
+    //setDervSecF("(20*x^3)+(48*x^2)+(6*x)-(20)");
+
+    //setG("sqrt(exp((3*x)-12)-(x*cos(3*x))+(4*x))");
+    //cout << incrementalSearch(-5, 1, 20);
+    setF("exp(-(x^2)+1)-(4*x^3)+25"); //bisection regula-falsi
+    closedMethodsTable(bisection(1, 2, 10e-7, 20, false), "Bisection Method");
     //closedMethodsTable(regulaFalsi(1, 2, 0.001, 20, false), "Regula Falsi Method");
-    //FPTable(fixedPoint(0.5*10e-8,1.5,20,true));
-    //NewtonTable(newtonMethod(0.5*10e-8,1.5,20,true));
-    MRTable(MultipleRootsMethod(0.5*10e-8,-2.5, 20, true));
-    ss.str(std::string());
-    secantTable(secantMethod(0.5*10e-8,1.3, 1.4,20,false));
+    //NewtonTable(newtonMethod(10e-8,3.7855,20,true));
+    //MRTable(multipleRootsMethod(10e-5,1.4, 40, true));
+    //ss.str(std::string());
+    secantTable(secantMethod(5.0*10e-8,0.8, 0.9,20,true));
     return 0;
 }
