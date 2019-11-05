@@ -761,7 +761,7 @@ int main(int argc, char *argv[]) {
     enablePres();
     vector<vector<double>> A = enterMatrix();
     //eliminacionGaussLU(A, {20,18,31,12});
-    eliminacionGaussLUPivoteo(A,{-12, 13, 31, -32}); 
+    //eliminacionGaussLUPivoteo(A,{-12, 13, 31, -32}); 
     //simpleGaussianElimination(A, {10, -10, 32, -21});
     //PPGaussianElimination(A, {10, -10, 32, -21});
     //simpleGaussianElimination(A, {12,32,-24,14});
