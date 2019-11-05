@@ -148,6 +148,7 @@ void printXVector(vector<vector<double>> x){
 void simpleGaussianElimination(vector<vector<double>> A, vector<double> b){
     vector<vector<double>> U = elimination(A, b);
     vector<vector<double>> x = regresiveSubstitution(U);
+    printXVector(x);
 }
 
 vector<vector<double>> switchCols(vector<vector<double>> Ab, int maxCol, int k){
@@ -277,7 +278,7 @@ vector<vector<double>> initLU(int n){
             }
         }
     }
-    addStep();
+    addStep(res);
     return res;
 }
 
@@ -543,12 +544,12 @@ vector<double> b, int norma, double w){
         dispertion = normaUniforme(vecAux)/normaUniforme(vector1);
     }
     j[to_string(counter)]= {vector0, dispertion};
-    cout << j[to_string(counter)].dump();
+    cout << j[to_string(counter)].dump() <<endl;
     vector0 = vector1;
     counter++;
   }
   j[to_string(counter)]= {vector0, dispertion};
-  cout << j[to_string(counter)].dump();
+  cout << j[to_string(counter)].dump() <<endl;
   if (dispertion < tolerance) {
     vector<vector<double>> res;
     res.push_back(vector0);
@@ -624,18 +625,160 @@ double lagrangeInterpolation(vector<double> xn, vector<double> fxn, double xi){
     return result; 
 }
 
+void matrizTridiagonal (vector<double> a,vector<double>b,vector<double>c,vector<double>d){
+    int n = d.size()-1;
+    c[0] = c[0]/b[0];
+    d[0] = d[0]/b[0];
+
+    for (int i = 1;i<n;i++){
+        double m = 1.0/(b[i]-a[i]*c[i-1]);
+        c[i] = c[i]*m;
+        d[i] = (d[i]-a[i]*d[i-1])*m;
+    }
+    
+    d[n] = (d[n]-a[n]*d[n-1])/(b[n]-a[n]*c[n-1]);
+
+    for (int i =n;i-->0;){
+        d[i] = d[i]-c[i]*d[i+1];
+    }
+
+    for(int i = 0;i<n+1;i++){
+        cout<< "x" << i << " = " << d[i]<<endl;
+    }
+}
+
+vector<vector<double>> reorganizarL(vector<vector<double>> A, int filaMayor, int filaMenor) {
+  int columna = filaMenor - 1;
+  double temp = A[filaMenor][columna];
+  A[filaMenor][columna] = A[filaMayor][columna];
+  A[filaMayor][columna] = temp;
+  return A;
+};
+
+vector<vector<vector<double>>> factorizacionLU (vector<vector<double>>  A) {
+  int n = A.size();
+  vector<vector<double>> L = initLU(n);
+  for (int k = 0; k < n - 1; k++) {
+    for (int i = k + 1; i < n; i++) {
+        double multiplicador = A[i][k] / A[k][k];
+        L[i][k] = multiplicador;
+      for (int j = k; j < n; j++) {
+        A[i][j] = A[i][j] - multiplicador * A[k][j];
+      }
+    }
+    addStep(L);
+    addStep(A);
+  }
+  vector<vector<vector<double>>> res;
+  res.push_back(L);
+  res.push_back(A);
+  return res;
+};
+
+vector<vector<vector<double>>> pivoteoParcialLU(vector<vector<double>> A, int k, vector<vector<double>>L) {
+  int n = A.size();
+  double mayor = abs(A[k][k]);
+  int filaMayor = k;
+  for (int s = k + 1; s < n; s++) {
+    if (abs(A[s][k]) > mayor) {
+      mayor = abs(A[s][k]);
+      filaMayor = s;
+    }
+  }
+  if (mayor == 0) {
+    cout << "The system doesnt have an unique solution" << endl;
+  } else {
+    if (filaMayor != k) {
+      A = switchRows(A, filaMayor, k);
+      switchMarks(filaMayor, k);
+      if (k > 0) L = reorganizarL(L, filaMayor, k);
+    }
+    vector<vector<vector<double>>> res;
+    res.push_back(L);
+    res.push_back(A);
+    return res;
+  }
+};
+
+vector<vector<vector<double>>> factorizacionLUPivoteo(vector<vector<double>> A){
+  int n = A.size();
+  initMarks(n);
+  vector<vector<double>> L = initLU(n);
+  for (int k = 0; k < n - 1; k++) {
+    vector<vector<vector<double>>> LA = pivoteoParcialLU(A, k, L);;
+    L = LA[0];
+    A = LA[1];
+    for (int i = k + 1; i < n; i++) {
+      double multiplicador = A[i][k] / A[k][k];
+      L[i][k] = multiplicador;
+      for (int j = k; j < n; j++) {
+        A[i][j] = A[i][j] - multiplicador * A[k][j];
+      }
+    }
+    addStep(L);
+    addStep(A);
+  }
+  vector<vector<vector<double>>> res;
+  res.push_back(L);
+  res.push_back(A);
+  return res;
+};
+
+void eliminacionGaussLU(vector<vector<double>> A,vector<double> b){
+    vector<vector<vector<double>>> LU = factorizacionLU(A);
+    vector<vector<double>> L = LU[0];
+    vector<vector<double>> U = LU[1];
+    vector<vector<double>> Lb = createAugmentedMatrix(L, b);
+    vector<vector<double>> z = progressiveSubstitution(Lb);
+    vector<vector<double>> Uz = createAugmentedMatrix(U, z[0]);
+    vector<vector<double>> x = regresiveSubstitution(Uz);
+    printXVector(x);
+}
+
+vector<double> organizarPb(vector<double> b){
+    vector<double> res;
+    for(int i = 0;i<b.size();i++){
+        res.push_back(b[marks[i]-1]);
+    }
+    return res;
+}
+
+void eliminacionGaussLUPivoteo(vector<vector<double>> A,vector<double> b){
+    vector<vector<vector<double>>> LU = factorizacionLUPivoteo(A);
+    vector<vector<double>> L = LU[0];
+    printMatrix(L);
+    vector<vector<double>> U = LU[1];
+    printMatrix(U);
+    vector<double> pb = organizarPb(b);
+    vector<vector<double>> Lb = createAugmentedMatrix(L, pb);
+    vector<vector<double>> z = progressiveSubstitution(Lb);
+    vector<vector<double>> Uz = createAugmentedMatrix(U, z[0]);
+    vector<vector<double>> x = regresiveSubstitution(Uz);
+    printXVector(x);
+}
+
 int main(int argc, char *argv[]) {
     enablePres();
-    //vector<vector<double>> A = enterMatrix();
+    vector<vector<double>> A = enterMatrix();
+    //eliminacionGaussLU(A, {20,18,31,12});
+    eliminacionGaussLUPivoteo(A,{-12, 13, 31, -32}); 
+    //simpleGaussianElimination(A, {10, -10, 32, -21});
+    //PPGaussianElimination(A, {10, -10, 32, -21});
     //simpleGaussianElimination(A, {12,32,-24,14});
     //PPGaussianElimination(A, {-12,13,31,-32});
     //PTGaussianElimination(A, {-12,13,31,-32});
     //Croult(A, {-20, 69, 96, -32}); //Tambien funciona para Doolittle
-    //jacobi(5.0e-6,{0,0,0}, 20, A, {-23, 5, 34}, 2);
+    //jacobi(5.0e-6,{0,0,0}, 20, A, {-23, 5, 34}, 2, 1);
     //gaussSeidel(5.0e-6,{0,0,0}, 20, A, {-23, 5, 34}, 2, 1); //normal
-    //gaussSeidel(5.0e-6,{0,0,0}, 30, A, {24, 30, -24}, 2, 1.3); //Relajado
+    //gaussSeidel(5.0e-6,{0,0,0}, 40, A, {-23, 5, 34}, 2, 1); //Relajado
     //showSteps();
-    //newtonInterpolation({2,2.2,2.4,2.6,2.8},{-4.6109,-4.1749,-3.3768,-2.1362,-0.3553});
-    cout << lagrangeInterpolation({-1,1,2,4},{7,-1,-8,2}, 2.5);
+    //newtonInterpolation({2,2.2,2.4,2.6,2.8,3},{-4.6109,-4.1749,-3.3768,-2.1362,-0.3553, 2.0855});
+    //cout << lagrangeInterpolation({2,2.2,2.4,4},{7,-1,-8,2}, 2.5);
+    
+    //vector<double> a = {0, 5,-3,2,4,7}; //diagonal inferior, primer elemento debe ser 0
+    //vector<double> b = {4,8,7,-5,10,15}; //diagonal principal
+    //vector<double> c = {3,2,2,2,2,0}; //diagonal superior, ultimo elemento debe ser 0
+    //vector<double> d = {23,18,19,2,12,-50}; //terminos independientes
+    //matrizTridiagonal(a,b,c,d);
     return 0;
 }
